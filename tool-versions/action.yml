@@ -1,0 +1,18 @@
+name: ASDF Tool Versions
+description: Retrieve asdf plugins and tool versions
+author: Dan Drew
+
+inputs:
+  dir:
+    default: '.'
+    description: 'Directory to start search for version files'
+
+runs:
+  using: composite
+  steps:
+    -
+      shell: bash
+      run: |
+        source "${{ github.action_path }}/action.sh"
+      env:
+        START_DIR: "${{ inputs.dir }}"

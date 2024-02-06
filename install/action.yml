@@ -1,0 +1,64 @@
+name: ASDF Install
+author: Dan Drew
+description: Install ADSF tools
+
+inputs:
+  version:
+    default: '0.14.0'
+    description: asdf version to install
+
+runs:
+  using: composite
+
+  steps:
+    - 
+      if: ${{ env.ASDF_PLUGINS == '' }}
+      shell: bash
+      run: |
+        echo '::error::No plugin list found. Run tool-versions action first.'
+        exit 1
+
+    -
+      name: Install asdf
+      shell: bash
+      run: |
+        if asdf --version; then exit 0; fi
+
+        echo '::group::Installing'
+        git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v${{ inputs.version }}
+        mkdir -p asdf_wrapper
+        cp "${{ github.action_path }}/asdf_wrapper.sh" asdf_wrapper/asdf
+        echo "${{ github.workspace }}/asdf_wrapper" >> $GITHUB_PATH
+        echo '::endgroup::'
+
+    - shell: bash
+      run: |
+        echo "PATH: $PATH"
+        echo "pwd: $(pwd)"
+        ls -l asdf_wrapper/
+        asdf --version
+
+    - 
+      name: Install asdf plugins
+      shell: bash
+      run: |
+        for plugin in $ASDF_PLUGINS; do
+          echo "::group::Installing ${plugin} plugin"
+          asdf plugin add ${plugin}
+          echo '::endgroup::'
+        done
+
+    - 
+      name: Install asdf tools
+      shell: bash
+      run: |
+        declare tool_var
+        declare tool_version
+
+        for plugin in $ASDF_PLUGINS; do
+          tool_var="${plugin^^}_VERSION"
+          tool_version=${!tool_var}
+          echo "::group::Installing ${plugin} ${tool_version}"
+          asdf install ${plugin} ${tool_version}
+          echo '::endgroup::'
+        done
